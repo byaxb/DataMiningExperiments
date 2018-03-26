@@ -45,8 +45,13 @@ cjb <- cbind(xm, ywcj)
 
 View(cjb)
 
+table(cj$性别, cj$文理分科)
+tmp <- table(cj$性别, cj$文理分科)
+tmp <- as.data.frame(tmp)
+View(tmp)
 
-
+tmp %>%
+  group_by(Var2, Var1)
 
 xb <- factor(c("女", "男", "男", "女", "男", "女"))
 
@@ -118,12 +123,27 @@ read_clipboard()
 read_clipboard(sep = "\t")
 cj <- read_clipboard()
 
+library(tidyverse)
 file_name <- "D://wd/R/data/cj.csv"
+cj <- read.csv(file_name)
+View(cj)
+cj <- cj %>%
+  select(-1)
+View(cj)
+
+
+read.csv(file_name) %>%
+  select(-1) %>%
+  View()
+
+#当然也可以从互联网读取
 file_name <- 
   "https://raw.githubusercontent.com/byaxb/DataMiningExperiments/master/data/cj.csv"
+#在读取csv文件时，经常碰到的一个棘手问题是乱码
+#采用readr::read_csv是一个比较保险的办法
 cj <- readr::read_csv(file_name)
 cj <- as.data.frame(cj)
-
+cj <- read.csv(file_name, fileEncoding = "UTF-8")
 View(cj)
 str(cj)
 head(cj)
@@ -132,66 +152,156 @@ View(tail(cj, n = 10))
 cj$班级 <- factor(cj$班级)
 cj$性别 <- factor(cj$性别)
 cj$文理分科 <- factor(cj$文理分科)
-str(cj)
+# #当然也可用下边的方式代替
+# for(i in c("班级", "性别", "文理分科")) {
+#   cat("processing ", i)
+#   cj[, i] <- factor(cj[, i])
+# }
 
-for(i in c("班级", "性别", "文理分科")) {
-  cj[, i] <- factor(cj[, i])
-}
 str(cj)
+cj$班级
+str(cj)
+#增加一列总成绩
 cj$总成绩 <- apply(cj[, 4:12], 1, sum)
+
 View(cj)
-cj <- cj[, -1]
-cj$X <- NULL
+
+#对数据进行分箱，离散化处理
 cj$等级水平 <- cut(cj$总成绩, 
                breaks = fivenum(cj$总成绩),
                labels = c("差", "中", "良", "优"),
                ordered_result = TRUE)
-str(cj)
-View(cj)
-table(cj$等级水平)
+#当然也可以对某一门课进行五分制成绩
+cj$数学等级 <- cut(cj$数学, 
+               breaks = c(0, 60, 70, 80, 90, 100),
+               labels = c("不及格", "及格", "中", "良", "优"),
+               include.lowest = TRUE,
+               ordered_result = TRUE)
+#一般来讲，我们需要对数据进行了解
+#看看大致的分布
 table(cj$等级水平, cj$班级)
 table(cj$等级水平, cj$性别)
+#由此可以看出，男女有别~
+
+
+table(cj$数学等级)
+hist(cj$数学)
+table(cj$数学等级,cj$性别)
+#更详细的数据探索在下一个小节展开
+str(cj)
+library(tidyverse)
+cj %>%
+  as.data.frame() %>%
+  select(3:12)%>%
+  gather(key = 科目, value = 成绩, -性别) %>%
+  group_by(科目, 性别) %>%
+  summarise(平均分 = mean(成绩),
+              中位数 = median(成绩),
+               最高分 = max(成绩),
+               最低分 = min(成绩),
+              记录数 = n()) %>%
+  View()
+
+file_name <- "D://wd/R/data/cj.csv"
+cj <- read.csv(file_name)
+cj <- cj %>%
+  select(-1) %>%
+  filter(语文 == 0) %>%
+  View()
+
+cj <- as.data.frame(cj)
+cj <- select(cj, 3:12)
+View(cj)
+cj_bak <- cj
+cj <- gather(cj, key = x1, value = x2, 数学, 外语)
+
+
+View(cj)
+
+View(cj)
+View(cj_bak)
+cj <- group_by(cj, 科目, 性别)
+cj <- group_by(cj, 性别, 科目)
+cj <- summarise(cj, 平均分 = mean(成绩),
+               最高分 = max(成绩),
+               最低分 = min(成绩))
+View(cj)
+
+
+
+
+cj %>%
+  as.data.frame() %>%
+  select(3:12)%>%
+  gather(科目,成绩,-性别) %>%
+  group_by(科目, 性别) %>%
+  summarise(平均分 = median(成绩)) %>%
+  View()
 
 sort(cj$总成绩)
 
 
 View(cj)
 
-cj %>%
-  arrange(desc(总成绩)) %>%
-  View()
-cj <- arrange(cj, desc(总成绩))
+library(tidyverse)
+cj <- cj %>%
+  select(-1) %>%
+  filter(总成绩 != 0) %>%
+  arrange(desc(总成绩))
+# 
+# View(cj)
+# 
+# cj <- arrange(cj, desc(总成绩))
+# View(cj)
+# 
+# cj <- cj[-which(cj$总成绩 == 0), ]
+# names(cj)
 View(cj)
 
-cj <- cj[-which(cj$总成绩 == 0), ]
-names(cj)
-View(cj)
 cn <- names(cj)
 str(cj)
 colnames(cj) <-  c("xm", "bj", "xb", "yw", "sx", "wy",
-                   "zz", "ls", "dl", "wl", "hx", "sw", "wlfk", "zcj", "djsp")
+                   "zz", "ls", "dl", "wl", "hx", "sw", "wlfk", "zcj")
 dzb <- data.frame(cn = cn, py = colnames(cj))
-
+View(dzb)
 attr(cj, "variable.labels") <- cn#在RStudio中能显示中文的标注
-save(cj, dzb, file = "cj.rda")
+save(cj, dzb, file = "data/cj.rda")
+load("data/cj.rda")
 
-load("cj.rda", verbose = TRUE)
+load("data/cj.rda", verbose = TRUE)
 
 
 ###########################################
 #数据的高矮胖瘦
-load("cj.rda")
+load("data/cj.rda", verbose = TRUE)
 mean(cj$yw)
 mean(cj$yw, trim = 0.1) #
 median(cj$yw)
 sd(cj$yw)
 length(which(cj$yw > mean(cj$yw) - sd(cj$yw) & cj$yw < mean(cj$yw) + sd(cj$yw))) / nrow(cj)
+
 var(cj$yw)
+
 min(cj$yw)
+sum(cj$yw < 60)
+sum(cj$yw >= 60)
+hist(cj$yw)
+hist(cj$yw[cj$yw >= 60])
+
+tmp <- cj %>%
+  filter(yw >= 60) %>%
+  select(yw)
+hist(tmp[, 1])
+
 max(cj$yw)
 range(cj$yw)
 diff(range(cj$yw))
+
+x <- c(1, 3, 9, 4)
+diff(diff(x))
+
 range(cj$yw)[2] - range(cj$yw)[1]
+
 quantile(cj$yw)
 fivenum(cj$yw)
 quantile(cj$yw, seq(0, 1, by = 0.1))
@@ -256,22 +366,56 @@ symnum(cor(cj[, 4:12]))
 
 ###########################################
 #映射关系
-load(".cj.rda")
+rm(list = ls())
+getwd()
+load("data/cj.rda", verbose = TRUE)
+View(cj)
 str(cj)
-library(rpart)
-tree.model <- rpart(wlfk~., data = cj[, 4:13])
-plot(tree.model,
+tmp <- library(rpart)
+if(!require("rpart")) {
+  install.packages("rpart")
+  library(rpart)
+}
+cj <- as.data.frame(cj)
+colnames(cj)
+tree_model <- rpart(wlfk~., data = cj[, 4:13])
+
+tree_model
+str(tree_model)
+
+
+#tree_model <- rpart(wlfk~.-xm, data = cj)
+#最简单的树模型绘制
+plot(tree_model,
      uniform = TRUE, 
      branch = 0.8, 
      margin = 0.1)
-text(tree.model, 
+text(tree_model, 
      all = TRUE, 
      use.n = TRUE, cex = 0.7)
-tree.model
+tree_model
 
-
+#稍微复杂一点的版本
+#但是好看了许多
 library(rattle)
-fancyRpartPlot(tree.model)
+fancyRpartPlot(tree_model)
+#添加一些参数
+fancyRpartPlot(tree_model,
+               main = "文理分科决策树",
+               sub = paste0("数据挖掘实验一 ", Sys.time()),
+               palettes=c("Greys", "Oranges"))
+fancyRpartPlot(tree_model,
+               main = "文理分科决策树",
+               sub = paste0("数据挖掘实验一 ", Sys.time()),
+               palettes=c("Greens", "YlOrRd"))
+
+
+system.time(for(i in 1:10000) x <- 1)
+sp <- Sys.time()
+for(i in 1:10000) x <- 1
+ed <- Sys.time()
+difftime(ed, sp, units = "sec")
+cat(round(difftime(ed, sp, units = "sec"), digits = 2), " seconds")
 
 
 split.fun <- function(x, labs, digits, varlen, faclen) {
@@ -284,31 +428,26 @@ split.fun <- function(x, labs, digits, varlen, faclen) {
   labs
 }
 library(rpart.plot)
-X11()
-x11()
-rpart.plot(tree.model,
+rpart.plot(tree_model,
            type=4, 
            fallen=T, 
            branch=.5, 
            round=0, 
            leaf.round=6,
-           clip.right.labs=F,
+           clip.right.labs=T,
            cex = 0.75,
            under.cex=0.75,
            box.palette="GnYlRd",
-           prefix="文理分科\n", 
+           prefix="当前类别\n", 
            branch.col="gray", 
            branch.lwd=2,
            extra=101, 
            under=T, 
            lt=" < ", 
            ge=" >= ",
-           split.cex=0.85,
-           #split.yspace = 2,
-           split.fun=split.fun)
+           split.cex=0.85)
 library(rpart.plot)
-x11()
-rpart.plot(tree.model,
+rpart.plot(tree_model,
            type=4, 
            fallen=T, 
            branch=.5, 
@@ -328,30 +467,36 @@ rpart.plot(tree.model,
           # lt=" < ", 
            #ge=" >= ",
            split.cex=0.85)
-bringToTop(which = dev.cur(), stay = TRUE)
 
+wlfk_predicted <- predict(tree_model, cj, type = "class")
+confusion_table <- table(wlfk_predicted, cj$wlfk)
+sum(diag(confusion_table)) / sum(confusion_table)
 
-wlfk.predicted <- predict(tree.model, cj, type = "class")
-confusion.table <- table(wlfk.predicted, cj$wlfk)
-sum(diag(confusion.table)) / sum(confusion.table)
+class(confusion_table)
+View(as.data.frame(confusion_table))
 
-xlj <- sample(1:nrow(cj), round(nrow(cj)*0.7))
-tree.model <- rpart(wlfk~., data = cj[xlj, 4:13])
-xlj.pre <- predict(tree.model, cj[xlj, ], type = "class")
-xlj.confusion.matrix <- table(cj[xlj, "wlfk"], xlj.pre)
-csj.pre <- predict(tree.model, cj[-xlj, ], type = "class")
-csj.confusion.matrix <- table(cj[-xlj, "wlfk"], csj.pre)
-sum(diag(xlj.confusion.matrix)) / sum(xlj.confusion.matrix)
-sum(diag(csj.confusion.matrix)) / sum(csj.confusion.matrix)
+as.data.frame.matrix(confusion_table)
+confusion_table %>%
+  as.data.frame.matrix() %>%
+  View()
+
+set.seed(2012)
+train_set_idx <- sample(1:nrow(cj), round(nrow(cj)*0.7))
+tree_model <- rpart(wlfk~., data = cj[train_set_idx, 4:13])
+train_pre <- predict(tree_model, cj[train_set_idx, ], type = "class")
+train_conf_matri <- table(cj[train_set_idx, "wlfk"], train_pre)
+test_pre <- predict(tree_model, cj[-train_set_idx, ], type = "class")
+test_conf_matri <- table(cj[-train_set_idx, "wlfk"], test_pre)
+sum(diag(train_conf_matri)) / sum(train_conf_matri)
+sum(diag(test_conf_matri)) / sum(test_conf_matri)
 
 
 #输出规则
 library(rattle)
-asRules(tree.model)
-View(asRules(tree.model))
+asRules(tree_model)
 
-
-
+rattle("D://desktop/cj.csv")
+rattle("D://desktop/cj_utf8.csv")
 
 ###########################################
 #距离关系
@@ -359,15 +504,91 @@ kcjl <- hclust(dist(t(scale(cj[, 4:12]))))
 plot(kcjl, h = -1)
 rect.hclust(kcjl, 3)
 
-cjjl <- hclust(dist(cj[, 4:12]), method = "ward.D") 
-confusion.table <- table(cutree(cjjl, 2), cj$wlfk)
-sum(diag(confusion.table)) / sum(confusion.table)
+random_count <- 20
+random_idx <- c(sample(which(cj$wlfk == "文科"), random_count),
+                sample(which(cj$wlfk == "理科"), random_count))
+dist_matri <- dist(cj[random_idx, 4:12])
+names(dist_matri) <- cj$xm[random_idx]
+stu_hclust <- hclust(dist_matri, method = "ward.D") 
+str(stu_hclust)
+stu_hclust$labels <- cj$xm[random_idx]
+#学术论文中的各种配色
+library(ggsci)
+library(scales)
+mypal = pal_npg("nrc", alpha = 0.7)(9)
+show_col(pal_uchicago()(9))
+show_col(pal_jco("default")(10))
+mypal[3:4]
+
+
+k <- 2
+factoextra::fviz_dend(
+  stu_hclust,
+  k = k,
+  k_colors = mypal,
+  type = "phylogenic",
+  repel = TRUE)
+
+my_plt <- factoextra::fviz_dend(
+  stu_hclust,
+  k = k,
+  k_colors = mypal[1:k],
+  type = "phylogenic",
+  repel = TRUE)
+inside_my_plt <- ggplot_build(my_plt)
+inside_my_plt
+
+
+#加载字体
+library(extrafont)
+loadfonts(device="win")
+windowsFonts()
+
+#深入my_plt内部
+#修改参数之后进行设置
+inside_my_plt$data[[3]][["fontface"]] <- "bold"
+my_plt_revised <- ggplot_gtable(inside_my_plt)
+grid.draw(my_plt_revised)
+
+#另存为图片文件
+ppi <- 300
+png(filename = "D://desktop/Fig.11.png", width = 7*ppi, height = 7*ppi, 
+    res = ppi, type = "cairo-png")  # units are pixels
+grid.draw(my_plt_revised)
+dev.off()
+
+factoextra::fviz_dend(
+  stu_hclust,
+  k = 2,
+  k_colors = mypal,
+  type = "circular",
+  repel = TRUE)
+
+factoextra::fviz_dend(
+  stu_hclust,
+  k = 2,
+  k_colors = mypal,
+  type = "rectangle",
+  repel = TRUE)
+
+cj %>%
+  filter(row_number() %in% random_idx) %>%
+  arrange(wlfk) %>%
+  View()
+
+cj[random_idx, ] %>%
+  arrange(wlfk) %>%
+  View()
+
+confusion_table <- table(cutree(stu_hclust, 2), cj$wlfk[random_idx])
+sum(diag(confusion_table)) / sum(confusion_table)
 
 
 ###########################################
 #伴随关系
 rm(list = ls())
-load("cj.rda", verbose = TRUE)
+load("data/cj.rda", verbose = TRUE)
+cj_bak <- cj
 str(cj)
 library(arules)
 apriori(cj)
@@ -376,6 +597,36 @@ cjdj <- list()
 for(i in 4:12) {
   cjdj[[names(cj)[i]]] <- cut(cj[, i], fivenum(cj[, i]), cjbq, include.lowest = TRUE)
 } 
+View(cj_bak)
+for(i in 4:12) {
+  cj[, i] <- cut(cj[, i],
+                 breaks = c(0, 60, 70, 80, 90, 100),
+                 label = c("不及格", "及格", "中", "良", "优"),
+                 include.lowest = TRUE)
+}
+
+cj_sub <- cj[, 3:13]
+View(cj_sub)
+
+library(arules)
+
+library(arulesViz)
+str(cj_sub)
+cj_sub$xb <- factor(cj_sub$xb)
+cj_sub$wlfk <- factor(cj_sub$wlfk)
+my_rules <- apriori(cj_sub,
+                    parameter = list(supp = 50/nrow(cj_sub), conf = 0.8, target = "rules"),
+                    appearance = list(rhs = c("wlfk=理科", "wlfk=文科"),
+                                      default="lhs"))
+
+my_rules
+inspect(my_rules)
+inspectDT(my_rules)
+plot(my_rules[1:15],  
+     method = "graph",
+     engine = "htmlwidget")
+
+View(cj)
 cjdj <- as.data.frame(cjdj)
 cjdj$xb <- cj$xb
 cjdj$wlfk <- cj$wlfk
@@ -436,7 +687,7 @@ View(cj.xy)
 names(cj.xy) <- names(cj)[4:13]
 
 rm(list = ls())
-load("cj.rda")
+load("data/cj.rda")
 View(cj)
 icor_score <- cor(cj[, 4:12])
 library(igraph)
